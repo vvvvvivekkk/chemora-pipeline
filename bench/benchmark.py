@@ -332,7 +332,7 @@ def model_outputs(name: str, pdf_bytes: bytes, fresh: bool = False, cache_only: 
     from pipeline import config, pdf_utils
     d = CACHE_DIR / name
     meta = {"dpi": config.PDF_RENDER_DPI, "crop_pad": config.CROP_PAD,
-            "max_pages": config.MAX_PAGES}
+            "max_pages": config.MAX_PAGES, "mask_labels": config.MASK_LABEL_IMAGES}
     pages = pdf_utils.pdf_to_images(pdf_bytes)
     f = d / "raw.json"
     if not fresh and f.exists():
@@ -349,8 +349,8 @@ def model_outputs(name: str, pdf_bytes: bytes, fresh: bool = False, cache_only: 
     from pipeline.reaction_engine import read_reactions_raw
     mols, rxns = [], []
     for pg in pages:  # one page at a time: this machine has little RAM
-        mols += read_molecules_raw([pg.image])
-        rxns += read_reactions_raw([pg.image])
+        mols += read_molecules_raw([pg.for_model])
+        rxns += read_reactions_raw([pg.for_model])
     d.mkdir(parents=True, exist_ok=True)
     for p, items in enumerate(mols):
         for i, m in enumerate(items):

@@ -91,7 +91,7 @@ def process_pdf(pdf_bytes: bytes, progress_callback=None, engine: str | None = N
     # Dropbox link that returns HTML on Windows. MolDetect locates structures in
     # each full page image on its own, so figure-finding isn't needed.
     if engine == "openchemie":
-        images = [pr.image for pr in result.pages]
+        images = [p.for_model for p in pages]  # picture-labels replaced, see config
 
         _progress(0.2, "Loading models & detecting molecules in page images…")
         for det in extract_molecules_from_images(images, [p.label_images for p in pages]):
