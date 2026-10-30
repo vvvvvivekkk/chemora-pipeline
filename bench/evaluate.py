@@ -247,9 +247,9 @@ def main(paper):
     ex, rex = count("exact"), sum(r["status"] == "exact" for r in rrows)
     nfp = sum(c["status"] == "fp" for c in fps)
     score = (f"structures exact {ex}/{n} ({100 * ex / n:.1f}%), near {count('near')}, "
-             f"wrong {count('wrong') + count('invalid')}, missed {count('missed')} | "
-             f"reactions exact {rex}/{len(rrows)} ({100 * rex / len(rrows):.1f}%) | "
-             f"false positives {nfp} structures, {len(rfps)} reactions | "
+             f"wrong {count('wrong') + count('invalid')}, missed {count('missed')} · "
+             f"reactions exact {rex}/{len(rrows)} ({100 * rex / len(rrows):.1f}%) · "
+             f"false positives {nfp} structures, {len(rfps)} reactions · "
              f"synthetic exact {syn['exact']}/{syn['n']}, extra {syn['extra']}")
     write_report(paper, score, rows, fps, rrows, rfps, pages)
     line = f"| {datetime.date.today()} | `{_commit()}` | {paper} | {score} |"
