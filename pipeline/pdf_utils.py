@@ -33,30 +33,6 @@ class RenderedPage:
     index: int
     image: Image.Image
     label_images: list = field(default_factory=list)
-    model_image: Image.Image | None = None  # what the models read, if it differs
-
-    @property
-    def for_model(self) -> Image.Image:
-        return self.model_image if self.model_image is not None else self.image
-
-
-def _relabel(image: Image.Image, boxes) -> Image.Image:
-    """Copy of the page with each picture-label replaced by a plain black 'R'."""
-    from PIL import ImageDraw, ImageFont
-    out = image.copy()
-    draw = ImageDraw.Draw(out)
-    W, H = out.size
-    for x1, y1, x2, y2 in boxes:
-        box = (int(x1 * W), int(y1 * H), int(x2 * W) + 1, int(y2 * H) + 1)
-        draw.rectangle(box, fill="white")
-        size = max(8, int((box[3] - box[1]) * 0.7))
-        try:
-            font = ImageFont.truetype("arial.ttf", size)
-        except OSError:
-            font = ImageFont.load_default()
-        draw.text(((box[0] + box[2]) / 2, (box[1] + box[3]) / 2), "R",
-                  fill="black", font=font, anchor="mm")
-    return out
 
 
 # An embedded image smaller than this (fraction of page width and height) is a
@@ -111,8 +87,6 @@ def pdf_to_images(pdf_bytes: bytes) -> list[RenderedPage]:
                 b = (x1 / r.width, y1 / r.height, x2 / r.width, y2 / r.height)
                 if b[2] - b[0] < LABEL_IMAGE_MAX and b[3] - b[1] < LABEL_IMAGE_MAX:
                     labels.append(b)
-            model_image = _relabel(image, labels) if labels and config.MASK_LABEL_IMAGES else None
-            pages.append(RenderedPage(index=i, image=image, label_images=labels,
-                                      model_image=model_image))
+            pages.append(RenderedPage(index=i, image=image, label_images=labels))
 
     return pages

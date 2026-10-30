@@ -106,14 +106,3 @@ LOW_CONFIDENCE_THRESHOLD = float(os.environ.get("CHEMORA_LOW_CONF", "0.5"))
 # not recover labels at the box edge (NMe2 still read as R) and pulled captions
 # and neighbouring structures into crops. Kept as a knob for other layouts.
 CROP_PAD = float(os.environ.get("CHEMORA_CROP_PAD", "0"))
-
-
-# ---------------------------------------------------------------------------
-# PICTURE LABELS
-# ---------------------------------------------------------------------------
-# Some publishers paste R-group labels (R', R'' in a coloured circle/box) into
-# vector drawings as tiny images. The models can't read a picture and, in
-# crowded ring systems, the whole structure comes out garbled. When on, the
-# models get a copy of the page with each such picture replaced by a plain
-# text "R"; the page shown to the user is unchanged.
-MASK_LABEL_IMAGES = os.environ.get("CHEMORA_MASK_LABELS", "1") == "1"

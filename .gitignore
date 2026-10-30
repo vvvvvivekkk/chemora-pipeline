@@ -32,4 +32,3 @@ bench/results.json
 bench/cache/
 bench/report.html
 bench/status_*.json
-bench/cache_cycle3/
