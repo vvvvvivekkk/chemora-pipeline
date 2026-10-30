@@ -7,3 +7,4 @@
 | 2026-10-31 | `7f908d4` | bjoc-20-228 | structures exact 40/52 (76.9%), near 3, wrong 9, missed 0 · reactions exact 2/10 (20.0%) · false positives 0 structures, 1 reactions · synthetic exact 35/47, extra 10 |
 | 2026-10-31 | `608dbad` | bjoc-20-228 | structures exact 40/52 (76.9%), near 3, wrong 9, missed 0 · reactions exact 4/10 (40.0%) · false positives 0 structures, 1 reactions · synthetic exact 35/47, extra 10 |
 | 2026-10-31 | `46023a6` | bjoc-20-228 | structures exact 37/52 (71.2%), near 7, wrong 8, missed 0 · reactions exact 2/10 (20.0%) · false positives 0 structures, 1 reactions · synthetic exact 35/47, extra 10 |
+| 2026-10-31 | `ba2d0a5` | bjoc-20-228 | structures exact 40/52 (76.9%), near 3, wrong 9, missed 0 · reactions exact 4/10 (40.0%) · false positives 0 structures, 1 reactions · synthetic exact 35/47, extra 10 |
