@@ -29,3 +29,6 @@ bench/cases/
 bench/papers/
 bench/papers_out/
 bench/results.json
+bench/cache/
+bench/report.html
+bench/status_*.json

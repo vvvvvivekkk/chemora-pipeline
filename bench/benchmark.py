@@ -7,6 +7,7 @@ failure mode (tiny rings, stereo, charges, low resolution, reactions, ...).
     python bench/benchmark.py make     # build bench/cases/*.pdf + answers.json
     python bench/benchmark.py run      # run pipeline, write bench/results.json
     python bench/benchmark.py run small_rings stereo   # just some cases
+    python bench/benchmark.py run --fresh             # re-run the model, ignore bench/cache
     python bench/benchmark.py check    # self-check of the scoring logic
     python bench/benchmark.py papers   # real PDFs in bench/papers -> bench/papers_out
 
@@ -190,6 +191,9 @@ def _key(smiles: str) -> str | None:
     m = Chem.MolFromSmiles(smiles or "")
     if not m:
         return None
+    for a in m.GetAtoms():  # R-group numbering ([1*], [2*]) is not chemistry
+        if a.GetAtomicNum() == 0:
+            a.SetIsotope(0)
     # InChI can't encode R-groups (*): fall back to canonical SMILES for those.
     return Chem.MolToInchiKey(m) or Chem.MolToSmiles(m)
 
@@ -261,6 +265,7 @@ def check():
     assert score_reaction("CO.OC=O>>COC=O", [(["CC"], ["COC=O"])]) == "product_only"
     assert score_reaction("CO>>CC", []) == "missed"
     assert score_page(["*c1ccccc1"], ["c1ccc(*)cc1"])["rows"][0]["match"] == "exact"
+    assert _key("[1*]c1ccccc1") == _key("*c1ccccc1")
     from pipeline.molecule_engine import clean_model_smiles as clean
     assert clean("*.*") is None                       # logo
     assert clean("[Co].[Co].[Co].[Co]") is None       # licence badge
@@ -277,22 +282,68 @@ def check():
 # ---------------------------------------------------------------------------
 # run: pipeline vs answer key
 # ---------------------------------------------------------------------------
-def run(engine: str = "openchemie", only: list[str] | None = None):
-    from pipeline.orchestrator import process_pdf
+CACHE_DIR = ROOT / "cache"
+
+
+def model_outputs(name: str, pdf_bytes: bytes, fresh: bool = False):
+    """Raw model output for one PDF, cached in bench/cache/<name>/.
+
+    Only the slow model step is cached (read_*_raw); the pipeline's
+    post-processing runs on top of it at scoring time, so a post-processing
+    fix is re-scored in seconds. The cache is reused only while the settings
+    that change the model's *input* (DPI, crop padding, page cap) are the same.
+    Returns (rendered pages, raw molecules per page, raw reactions per page).
+    """
+    from PIL import Image
+    from pipeline import config, pdf_utils
+    d = CACHE_DIR / name
+    meta = {"dpi": config.PDF_RENDER_DPI, "crop_pad": config.CROP_PAD,
+            "max_pages": config.MAX_PAGES}
+    pages = pdf_utils.pdf_to_images(pdf_bytes)
+    f = d / "raw.json"
+    if not fresh and f.exists():
+        data = json.loads(f.read_text())
+        if data["meta"] == meta:
+            for p, items in enumerate(data["molecules"]):
+                for i, m in enumerate(items):
+                    cp = d / f"p{p + 1}_{i}.png"
+                    m["crop"] = Image.open(cp) if cp.exists() else None
+            return pages, data["molecules"], data["reactions"]
+    from pipeline.molecule_engine import read_molecules_raw
+    from pipeline.reaction_engine import read_reactions_raw
+    mols, rxns = [], []
+    for pg in pages:  # one page at a time: this machine has little RAM
+        mols += read_molecules_raw([pg.image])
+        rxns += read_reactions_raw([pg.image])
+    d.mkdir(parents=True, exist_ok=True)
+    for p, items in enumerate(mols):
+        for i, m in enumerate(items):
+            if m["crop"] is not None:
+                m["crop"].save(d / f"p{p + 1}_{i}.png")
+    f.write_text(json.dumps({"meta": meta, "reactions": rxns, "molecules": [
+        [{k: v for k, v in m.items() if k != "crop"} for m in items] for items in mols]},
+        default=lambda o: None))  # never lose a long model run to one odd type
+    return pages, mols, rxns
+
+
+def run(only: list[str] | None = None, fresh: bool = False):
+    from pipeline.molecule_engine import molecules_from_raw
+    from pipeline.reaction_engine import reactions_from_raw
     out, t_all = [], time.time()
     for name, pages in CASES.items():
         if only and name not in only:
             continue
         t0 = time.time()
-        res = process_pdf((CASES_DIR / f"{name}.pdf").read_bytes(), engine=engine)
+        _, raw_mols, raw_rxns = model_outputs(
+            f"synthetic/{name}", (CASES_DIR / f"{name}.pdf").read_bytes(), fresh)
+        mols, rxns = molecules_from_raw(raw_mols), reactions_from_raw(raw_rxns)
         dt = time.time() - t0
-        case = {"case": name, "seconds": round(dt, 1), "status": res.status, "pages": []}
+        case = {"case": name, "seconds": round(dt, 1), "pages": []}
         for i, spec in enumerate(pages):
-            pr = res.pages[i] if i < len(res.pages) else None
-            got = [m.canonical_smiles or m.raw_smiles for m in pr.molecules] if pr else []
+            got = [m.smiles for m in mols if m.page == i]
             page = {"page": i + 1, **score_page([s for _, s in spec.get("mols", [])], got)}
             if spec.get("rxn"):
-                rx = [(r.reactants, r.products) for r in pr.reactions] if pr else []
+                rx = [(r.reactants, r.products) for r in rxns if r.page == i]
                 page["reaction"] = {"expected": spec["rxn"],
                                     "got": [f"{'.'.join(a)}>>{'.'.join(b)}" for a, b in rx],
                                     "match": score_reaction(spec["rxn"], rx)}
@@ -312,6 +363,7 @@ def run(engine: str = "openchemie", only: list[str] | None = None):
     print(f"\n{n} molecules: exact {count('exact')}  skeleton {count('skeleton')}  "
           f"near {count('near')}  missed {count('missed')}  |  extra {extra}  "
           f"|  total {time.time() - t_all:.0f}s")
+    return {"exact": count("exact"), "n": n, "extra": extra}
 
 
 # ---------------------------------------------------------------------------
@@ -372,8 +424,9 @@ def papers(only: list[str] | None = None):
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "run"
-    if cmd == "run":
-        run(only=sys.argv[2:] or None)  # e.g.  run small_rings stereo
+    if cmd == "run":  # e.g.  run small_rings stereo   |   run --fresh  (ignore cache)
+        args = sys.argv[2:]
+        run(only=[a for a in args if a != "--fresh"] or None, fresh="--fresh" in args)
     elif cmd == "papers":
         papers(only=sys.argv[2:] or None)  # e.g.  papers bjoc-20-228
     else:

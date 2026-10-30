@@ -210,29 +210,62 @@ def extract_molecules_from_images(images: list[Image.Image]) -> list[DetectedMol
     page index. Returns [] / an error marker on failure — never raises.
     """
     try:
-        from openchemie.utils import clean_bbox_output, convert_to_cv2  # type: ignore
-        model = _get_openchemie()
-        # Same steps as OpenChemIE.extract_molecules_from_figures, unrolled because
-        # MolScribe crashes on an empty batch ("not enough values to unpack"):
-        # a document with no structures must give [] rather than an error.
-        bboxes = model.extract_molecule_bboxes_from_figures(images, batch_size=4)
-        for page_boxes in bboxes:
-            for b in page_boxes:
-                b["bbox"] = _pad_bbox(b["bbox"], config.CROP_PAD)
-        figures = [convert_to_cv2(im) for im in images]
-        results, crops, refs = clean_bbox_output(figures, bboxes)
-        if crops:
-            infos = model.molscribe.predict_images(crops, return_confidence=True, batch_size=4)
-            for info, ref in zip(infos, refs):
-                ref.update(info)
+        raw = read_molecules_raw(images)
     except Exception as exc:
         return [DetectedMolecule(smiles=f"[molecule model error: {exc}]", confidence=0.0)]
+    return molecules_from_raw(raw)
 
+
+def read_molecules_raw(images: list[Image.Image]) -> list[list[dict]]:
+    """Model step only (slow). Per page: [{bbox, smiles, molfile, confidence,
+    crop}] exactly as MolDetect + MolScribe produced them, before any cleanup.
+    bench/ caches this so post-processing changes can be re-scored without
+    re-running the model. Raises on model failure.
+    """
+    from openchemie.utils import clean_bbox_output, convert_to_cv2  # type: ignore
+    model = _get_openchemie()
+    # Same steps as OpenChemIE.extract_molecules_from_figures, unrolled because
+    # MolScribe crashes on an empty batch ("not enough values to unpack"):
+    # a document with no structures must give [] rather than an error.
+    bboxes = model.extract_molecule_bboxes_from_figures(images, batch_size=4)
+    for page_boxes in bboxes:
+        for b in page_boxes:
+            b["bbox"] = _pad_bbox(b["bbox"], config.CROP_PAD)
+    figures = [convert_to_cv2(im) for im in images]
+    results, crops, refs = clean_bbox_output(figures, bboxes)
+    if crops:
+        infos = model.molscribe.predict_images(crops, return_confidence=True, batch_size=4)
+        for info, ref in zip(infos, refs):
+            ref.update(info)
+    pages = []
+    for fig in results:
+        items = []
+        for m in fig.get("molecules", []):
+            crop = m.get("image")
+            items.append({
+                "bbox": [float(v) for v in m["bbox"]],
+                "smiles": _coerce_smiles(m),
+                "molfile": m.get("molfile"),
+                "confidence": _coerce_score(m),
+                # OpenChemIE crops are BGR numpy arrays; flip to RGB for display.
+                "crop": Image.fromarray(crop[:, :, ::-1]) if crop is not None and getattr(crop, "size", 0) else None,
+            })
+        pages.append(items)
+    return pages
+
+
+def molecules_from_raw(raw_pages: list[list[dict]]) -> list[DetectedMolecule]:
+    """Post-processing step (fast): cleanup -> DetectedMolecule. Page = list index."""
     molecules: list[DetectedMolecule] = []
-    for page_idx, fig in enumerate(results or []):
-        for det in _molecules_from_openchemie_figure(fig):
-            det.page = page_idx  # align to the rendered page order
-            molecules.append(det)
+    for page_idx, items in enumerate(raw_pages):
+        for m in items:
+            smi = clean_model_smiles(m.get("smiles"))
+            if smi:
+                molecules.append(DetectedMolecule(
+                    smiles=smi, confidence=m.get("confidence", 1.0), page=page_idx,
+                    bbox=tuple(m["bbox"]) if m.get("bbox") else None,
+                    crop=m.get("crop"), molfile=m.get("molfile"),
+                ))
     return molecules
 
 

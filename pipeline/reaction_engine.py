@@ -62,18 +62,40 @@ def extract_reactions_from_images(images: list[Image.Image]) -> list[DetectedRea
     this for the openchemie engine.
     """
     try:
-        model = _get_openchemie()
-        results = model.extract_reactions_from_figures(images)
+        raw = read_reactions_raw(images)
     except Exception as exc:
         return [DetectedReaction(conditions=[f"[reaction model error: {exc}]"],
                                  confidence=0.0)]
+    return reactions_from_raw(raw)
 
+
+def read_reactions_raw(images: list[Image.Image]) -> list[dict]:
+    """Model step only (slow): RxnScribe's per-page result dicts, made JSON-safe
+    so bench/ can cache them. Raises on model failure."""
+    model = _get_openchemie()
+    return [_jsonable(fig) for fig in model.extract_reactions_from_figures(images) or []]
+
+
+def reactions_from_raw(raw_pages: list[dict]) -> list[DetectedReaction]:
+    """Post-processing step (fast): raw dicts -> DetectedReaction. Page = list index."""
     reactions: list[DetectedReaction] = []
-    for page_idx, fig in enumerate(results or []):
+    for page_idx, fig in enumerate(raw_pages):
         for rxn in _reactions_from_openchemie_figure(fig):
             rxn.page = page_idx
             reactions.append(rxn)
     return reactions
+
+
+def _jsonable(x):
+    """numpy scalars -> plain Python; images (PIL or array crops) are dropped."""
+    if isinstance(x, dict):
+        return {k: _jsonable(v) for k, v in x.items()
+                if k != "image" and not isinstance(v, Image.Image)}
+    if isinstance(x, (list, tuple)):
+        return [_jsonable(v) for v in x if not isinstance(v, Image.Image)]
+    if hasattr(x, "tolist"):
+        return x.tolist()
+    return x
 
 
 def _reactions_from_openchemie_figure(fig: dict) -> list[DetectedReaction]:

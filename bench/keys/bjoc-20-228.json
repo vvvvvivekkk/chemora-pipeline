@@ -1,0 +1,790 @@
+{
+ "paper": "bjoc-20-228",
+ "citation": "de Abreu, Ehlers, Langer, Beilstein J. Org. Chem. 2024, 20, 2708-2719, doi:10.3762/bjoc.20.228",
+ "structures": [
+  {
+   "id": "p1-journal-logo",
+   "page": 1,
+   "label": "journal-logo",
+   "smiles": null,
+   "box": [
+    0.09,
+    0.05,
+    0.18,
+    0.115
+   ],
+   "junk": true
+  },
+  {
+   "id": "p1-cc-by-badge",
+   "page": 1,
+   "label": "cc-by-badge",
+   "smiles": null,
+   "box": [
+    0.49,
+    0.46,
+    0.6,
+    0.5
+   ],
+   "junk": true
+  },
+  {
+   "id": "p2-F1-Miyasaka62",
+   "page": 2,
+   "label": "F1-Miyasaka62",
+   "smiles": "*c1ccc(-c2cc(=O)n(*)c(=O)n2*)cc1",
+   "box": [
+    0.11,
+    0.12,
+    0.25,
+    0.25
+   ],
+   "junk": false
+  },
+  {
+   "id": "p2-F1-Bristol64",
+   "page": 2,
+   "label": "F1-Bristol64",
+   "smiles": "*c1ccc(-c2cn(*)c(=O)n(*)c2=O)cc1",
+   "box": [
+    0.26,
+    0.15,
+    0.46,
+    0.25
+   ],
+   "junk": false
+  },
+  {
+   "id": "p2-F1-Miyasaka63",
+   "page": 2,
+   "label": "F1-Miyasaka63",
+   "smiles": "*c1ccc(C#Cc2cc(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.11,
+    0.27,
+    0.25,
+    0.42
+   ],
+   "junk": false
+  },
+  {
+   "id": "p2-F1-Barr51",
+   "page": 2,
+   "label": "F1-Barr51",
+   "smiles": "*c1ccc(C#Cc2cn(*)c(=O)n(*)c2=O)cc1",
+   "box": [
+    0.26,
+    0.31,
+    0.47,
+    0.42
+   ],
+   "junk": false
+  },
+  {
+   "id": "p2-F1-previous-work(4)",
+   "page": 2,
+   "label": "F1-previous-work(4)",
+   "smiles": "*c1ccc(C#Cc2c(-c3ccc(*)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.49,
+    0.22,
+    0.68,
+    0.38
+   ],
+   "junk": false
+  },
+  {
+   "id": "p2-F1-this-work(5)",
+   "page": 2,
+   "label": "F1-this-work(5)",
+   "smiles": "*c1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(*)cc23)cc1",
+   "box": [
+    0.69,
+    0.23,
+    0.89,
+    0.38
+   ],
+   "junk": false
+  },
+  {
+   "id": "p2-A",
+   "page": 2,
+   "label": "A",
+   "smiles": "*n1c(=O)c2c3ccccc3*c2n(*)c1=O",
+   "box": [
+    0.17,
+    0.5,
+    0.36,
+    0.61
+   ],
+   "junk": false
+  },
+  {
+   "id": "p2-B",
+   "page": 2,
+   "label": "B",
+   "smiles": "*n1c(=O)c2cc3ccccc3nc2n(*)c1=O",
+   "box": [
+    0.36,
+    0.5,
+    0.56,
+    0.61
+   ],
+   "junk": false
+  },
+  {
+   "id": "p2-C",
+   "page": 2,
+   "label": "C",
+   "smiles": "*c1ccc(-c2cc3c(c(=O)n(*)c(=O)n3*)c3ccc(*)cc23)cc1",
+   "box": [
+    0.57,
+    0.5,
+    0.82,
+    0.61
+   ],
+   "junk": false
+  },
+  {
+   "id": "p3-1",
+   "page": 3,
+   "label": "1",
+   "smiles": "Cn1c(Cl)cc(=O)n(C)c1=O",
+   "box": [
+    0.1,
+    0.16,
+    0.21,
+    0.29
+   ],
+   "junk": false
+  },
+  {
+   "id": "p3-2",
+   "page": 3,
+   "label": "2",
+   "smiles": "Cn1c(Cl)c(Br)c(=O)n(C)c1=O",
+   "box": [
+    0.3,
+    0.16,
+    0.42,
+    0.29
+   ],
+   "junk": false
+  },
+  {
+   "id": "p3-R'-alkyne",
+   "page": 3,
+   "label": "R'-alkyne",
+   "smiles": "*c1ccc(C#C)cc1",
+   "box": [
+    0.42,
+    0.13,
+    0.49,
+    0.25
+   ],
+   "junk": false
+  },
+  {
+   "id": "p3-3",
+   "page": 3,
+   "label": "3",
+   "smiles": "*c1ccc(C#Cc2c(Br)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.52,
+    0.15,
+    0.64,
+    0.32
+   ],
+   "junk": false
+  },
+  {
+   "id": "p3-R''-boronic",
+   "page": 3,
+   "label": "R''-boronic",
+   "smiles": "*c1ccc(B(O)O)cc1",
+   "box": [
+    0.6,
+    0.13,
+    0.68,
+    0.24
+   ],
+   "junk": false
+  },
+  {
+   "id": "p3-4",
+   "page": 3,
+   "label": "4",
+   "smiles": "*c1ccc(C#Cc2c(-c3ccc(*)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.71,
+    0.15,
+    0.9,
+    0.32
+   ],
+   "junk": false
+  },
+  {
+   "id": "p3-5",
+   "page": 3,
+   "label": "5",
+   "smiles": "*c1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(*)cc23)cc1",
+   "box": [
+    0.41,
+    0.33,
+    0.6,
+    0.5
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-3",
+   "page": 4,
+   "label": "3",
+   "smiles": "*c1ccc(C#Cc2c(Br)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.27,
+    0.16,
+    0.4,
+    0.32
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-R''-boronic",
+   "page": 4,
+   "label": "R''-boronic",
+   "smiles": "*c1ccc(B(O)O)cc1",
+   "box": [
+    0.4,
+    0.14,
+    0.48,
+    0.25
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4",
+   "page": 4,
+   "label": "4",
+   "smiles": "*c1ccc(C#Cc2c(-c3ccc(*)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.52,
+    0.16,
+    0.7,
+    0.32
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4a",
+   "page": 4,
+   "label": "4a",
+   "smiles": "Cc1ccc(C#Cc2c(-c3ccc(C)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.18,
+    0.34,
+    0.38,
+    0.5
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4b",
+   "page": 4,
+   "label": "4b",
+   "smiles": "Cc1ccc(C#Cc2c(-c3ccc(N(C)C)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.4,
+    0.34,
+    0.6000000000000001,
+    0.5
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4c",
+   "page": 4,
+   "label": "4c",
+   "smiles": "Cc1ccc(C#Cc2c(-c3ccc(C(F)(F)F)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.62,
+    0.34,
+    0.8200000000000001,
+    0.5
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4d",
+   "page": 4,
+   "label": "4d",
+   "smiles": "Cc1ccc(-c2c(C#Cc3ccc(N(C)C)cc3)n(C)c(=O)n(C)c2=O)cc1",
+   "box": [
+    0.18,
+    0.51,
+    0.38,
+    0.67
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4e",
+   "page": 4,
+   "label": "4e",
+   "smiles": "CN(C)c1ccc(C#Cc2c(-c3ccc(N(C)C)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.4,
+    0.51,
+    0.6000000000000001,
+    0.67
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4f",
+   "page": 4,
+   "label": "4f",
+   "smiles": "CN(C)c1ccc(C#Cc2c(-c3ccc(C(F)(F)F)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.62,
+    0.51,
+    0.8200000000000001,
+    0.67
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4g",
+   "page": 4,
+   "label": "4g",
+   "smiles": "Cn1c(C#Cc2ccccc2)c(-c2ccccc2)c(=O)n(C)c1=O",
+   "box": [
+    0.18,
+    0.69,
+    0.38,
+    0.85
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4h",
+   "page": 4,
+   "label": "4h",
+   "smiles": "Cn1c(C#Cc2ccc(F)cc2)c(-c2ccc(F)cc2)c(=O)n(C)c1=O",
+   "box": [
+    0.4,
+    0.69,
+    0.6000000000000001,
+    0.85
+   ],
+   "junk": false
+  },
+  {
+   "id": "p4-4i",
+   "page": 4,
+   "label": "4i",
+   "smiles": "Cc1ccc(C#Cc2c(-c3csc4ccccc34)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.62,
+    0.69,
+    0.8200000000000001,
+    0.85
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-4",
+   "page": 6,
+   "label": "4",
+   "smiles": "*c1ccc(C#Cc2c(-c3ccc(*)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.19,
+    0.11,
+    0.4,
+    0.3
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5",
+   "page": 6,
+   "label": "5",
+   "smiles": "*c1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(*)cc23)cc1",
+   "box": [
+    0.57,
+    0.12,
+    0.78,
+    0.3
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5a",
+   "page": 6,
+   "label": "5a",
+   "smiles": "Cc1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(C)cc23)cc1",
+   "box": [
+    0.17,
+    0.3,
+    0.38,
+    0.45999999999999996
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5b",
+   "page": 6,
+   "label": "5b",
+   "smiles": "Cc1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(N(C)C)cc23)cc1",
+   "box": [
+    0.39,
+    0.3,
+    0.6,
+    0.45999999999999996
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5c",
+   "page": 6,
+   "label": "5c",
+   "smiles": "Cc1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(C(F)(F)F)cc23)cc1",
+   "box": [
+    0.61,
+    0.3,
+    0.82,
+    0.45999999999999996
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5d",
+   "page": 6,
+   "label": "5d",
+   "smiles": "Cc1ccc2c(c1)c(-c1ccc(N(C)C)cc1)cc1c2c(=O)n(C)c(=O)n1C",
+   "box": [
+    0.17,
+    0.48,
+    0.38,
+    0.64
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5e",
+   "page": 6,
+   "label": "5e",
+   "smiles": "CN(C)c1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(N(C)C)cc23)cc1",
+   "box": [
+    0.39,
+    0.48,
+    0.6,
+    0.64
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5f",
+   "page": 6,
+   "label": "5f",
+   "smiles": "CN(C)c1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(C(F)(F)F)cc23)cc1",
+   "box": [
+    0.61,
+    0.48,
+    0.82,
+    0.64
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5g",
+   "page": 6,
+   "label": "5g",
+   "smiles": "Cn1c(=O)c2c3ccccc3c(-c3ccccc3)cc2n(C)c1=O",
+   "box": [
+    0.17,
+    0.64,
+    0.38,
+    0.8
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5h",
+   "page": 6,
+   "label": "5h",
+   "smiles": "Cn1c(=O)c2c3ccc(O)cc3c(-c3ccc(F)cc3)cc2n(C)c1=O",
+   "box": [
+    0.39,
+    0.64,
+    0.6,
+    0.8
+   ],
+   "junk": false
+  },
+  {
+   "id": "p6-5i",
+   "page": 6,
+   "label": "5i",
+   "smiles": "Cc1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3c2sc2ccccc23)cc1",
+   "box": [
+    0.61,
+    0.64,
+    0.82,
+    0.8
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-4d",
+   "page": 7,
+   "label": "4d",
+   "smiles": "Cc1ccc(-c2c(C#Cc3ccc(N(C)C)cc3)n(C)c(=O)n(C)c2=O)cc1",
+   "box": [
+    0.14,
+    0.11,
+    0.32,
+    0.28
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-Ia",
+   "page": 7,
+   "label": "Ia",
+   "smiles": "Cc1ccc(-c2c(C=[C+]c3ccc([NH+](C)C)cc3)n(C)c(=O)n(C)c2=O)cc1",
+   "box": [
+    0.41,
+    0.11,
+    0.64,
+    0.3
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-5d(4a)",
+   "page": 7,
+   "label": "5d(4a)",
+   "smiles": "Cc1ccc2c(c1)c(-c1ccc(N(C)C)cc1)cc1c2c(=O)n(C)c(=O)n1C",
+   "box": [
+    0.72,
+    0.11,
+    0.9,
+    0.28
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-4b",
+   "page": 7,
+   "label": "4b",
+   "smiles": "Cc1ccc(C#Cc2c(-c3ccc(N(C)C)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.14,
+    0.29,
+    0.34,
+    0.44
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-Ib",
+   "page": 7,
+   "label": "Ib",
+   "smiles": "Cc1ccc([C+]=Cc2c(-c3ccc([NH+](C)C)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.41,
+    0.29,
+    0.64,
+    0.45
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-Fig3-5a",
+   "page": 7,
+   "label": "Fig3-5a",
+   "smiles": "Cc1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(C)cc23)cc1",
+   "box": [
+    0.09,
+    0.49,
+    0.24,
+    0.65
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-Fig3-5d",
+   "page": 7,
+   "label": "Fig3-5d",
+   "smiles": "Cc1ccc2c(c1)c(-c1ccc(N(C)C)cc1)cc1c2c(=O)n(C)c(=O)n1C",
+   "box": [
+    0.23,
+    0.49,
+    0.37,
+    0.65
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-Fig3-5f",
+   "page": 7,
+   "label": "Fig3-5f",
+   "smiles": "CN(C)c1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(C(F)(F)F)cc23)cc1",
+   "box": [
+    0.36,
+    0.49,
+    0.5,
+    0.65
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-Fig3-5g",
+   "page": 7,
+   "label": "Fig3-5g",
+   "smiles": "Cn1c(=O)c2c3ccccc3c(-c3ccccc3)cc2n(C)c1=O",
+   "box": [
+    0.49,
+    0.49,
+    0.61,
+    0.65
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-Fig3-5h",
+   "page": 7,
+   "label": "Fig3-5h",
+   "smiles": "Cn1c(=O)c2c3ccc(O)cc3c(-c3ccc(F)cc3)cc2n(C)c1=O",
+   "box": [
+    0.6,
+    0.49,
+    0.75,
+    0.65
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-Fig3-5i",
+   "page": 7,
+   "label": "Fig3-5i",
+   "smiles": "Cc1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3c2sc2ccccc23)cc1",
+   "box": [
+    0.74,
+    0.49,
+    0.9,
+    0.65
+   ],
+   "junk": false
+  },
+  {
+   "id": "p7-spectra-plots",
+   "page": 7,
+   "label": "spectra-plots",
+   "smiles": null,
+   "box": [
+    0.13,
+    0.66,
+    0.86,
+    0.88
+   ],
+   "junk": true
+  }
+ ],
+ "reactions": [
+  {
+   "id": "S1-i",
+   "page": 3,
+   "reactants": [
+    "Cn1c(Cl)cc(=O)n(C)c1=O"
+   ],
+   "products": [
+    "Cn1c(Cl)c(Br)c(=O)n(C)c1=O"
+   ]
+  },
+  {
+   "id": "S1-ii",
+   "page": 3,
+   "reactants": [
+    "Cn1c(Cl)c(Br)c(=O)n(C)c1=O",
+    "*c1ccc(C#C)cc1"
+   ],
+   "products": [
+    "*c1ccc(C#Cc2c(Br)c(=O)n(C)c(=O)n2C)cc1"
+   ]
+  },
+  {
+   "id": "S1-iii",
+   "page": 3,
+   "reactants": [
+    "*c1ccc(C#Cc2c(Br)c(=O)n(C)c(=O)n2C)cc1",
+    "*c1ccc(B(O)O)cc1"
+   ],
+   "products": [
+    "*c1ccc(C#Cc2c(-c3ccc(*)cc3)c(=O)n(C)c(=O)n2C)cc1"
+   ]
+  },
+  {
+   "id": "S1-iv",
+   "page": 3,
+   "reactants": [
+    "*c1ccc(C#Cc2c(-c3ccc(*)cc3)c(=O)n(C)c(=O)n2C)cc1"
+   ],
+   "products": [
+    "*c1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(*)cc23)cc1"
+   ]
+  },
+  {
+   "id": "S2",
+   "page": 4,
+   "reactants": [
+    "*c1ccc(C#Cc2c(Br)c(=O)n(C)c(=O)n2C)cc1",
+    "*c1ccc(B(O)O)cc1"
+   ],
+   "products": [
+    "*c1ccc(C#Cc2c(-c3ccc(*)cc3)c(=O)n(C)c(=O)n2C)cc1"
+   ]
+  },
+  {
+   "id": "S3",
+   "page": 6,
+   "reactants": [
+    "*c1ccc(C#Cc2c(-c3ccc(*)cc3)c(=O)n(C)c(=O)n2C)cc1"
+   ],
+   "products": [
+    "*c1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(*)cc23)cc1"
+   ]
+  },
+  {
+   "id": "S4a-1",
+   "page": 7,
+   "reactants": [
+    "Cc1ccc(-c2c(C#Cc3ccc(N(C)C)cc3)n(C)c(=O)n(C)c2=O)cc1"
+   ],
+   "products": [
+    "Cc1ccc(-c2c(C=[C+]c3ccc([NH+](C)C)cc3)n(C)c(=O)n(C)c2=O)cc1"
+   ]
+  },
+  {
+   "id": "S4a-2",
+   "page": 7,
+   "reactants": [
+    "Cc1ccc(-c2c(C=[C+]c3ccc([NH+](C)C)cc3)n(C)c(=O)n(C)c2=O)cc1"
+   ],
+   "products": [
+    "Cc1ccc2c(c1)c(-c1ccc(N(C)C)cc1)cc1c2c(=O)n(C)c(=O)n1C"
+   ]
+  },
+  {
+   "id": "S4b",
+   "page": 7,
+   "reactants": [
+    "Cc1ccc(C#Cc2c(-c3ccc(N(C)C)cc3)c(=O)n(C)c(=O)n2C)cc1"
+   ],
+   "products": [
+    "Cc1ccc([C+]=Cc2c(-c3ccc([NH+](C)C)cc3)c(=O)n(C)c(=O)n2C)cc1"
+   ]
+  }
+ ]
+}
