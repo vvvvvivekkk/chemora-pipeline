@@ -61,7 +61,7 @@ def _iou(a, b):
     return inter / union if union else 0.0
 
 
-def match_structures(key, raw_mols):
+def match_structures(key, raw_mols, label_images=None):
     """Assign each crop to the key entry whose box holds the crop's centre (best IoU)."""
     from pipeline.molecule_engine import postprocess_smiles
     crops = []
@@ -72,7 +72,8 @@ def match_structures(key, raw_mols):
             cands = [k for k in key["structures"] if k["page"] == p + 1 and _contains(k["box"], cx, cy)]
             best = max(cands, key=lambda k: _iou(k["box"], b), default=None)
             crops.append({"page": p + 1, "i": i, "bbox": b, "raw": m.get("smiles"),
-                          "final": postprocess_smiles(m), "crop": m.get("crop"),
+                          "final": postprocess_smiles(m, label_images[p] if label_images else ()),
+                          "crop": m.get("crop"),
                           "confidence": m.get("confidence"), "key": best})
     # one crop per key entry: the best-overlapping; other crops on it are duplicates
     taken = {}
@@ -238,7 +239,7 @@ def main(paper):
     key = json.loads((ROOT / "keys" / f"{paper}.json").read_text())
     pages, raw_mols, raw_rxns = model_outputs(paper, (ROOT / "papers" / f"{paper}.pdf").read_bytes(),
                                               cache_only=True)
-    rows, fps = match_structures(key, raw_mols)
+    rows, fps = match_structures(key, raw_mols, [pg.label_images for pg in pages])
     rrows, rfps = match_reactions(key, raw_rxns)
     syn = run_synthetic(cache_only=True)
 

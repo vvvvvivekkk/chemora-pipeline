@@ -285,6 +285,26 @@ def check():
     assert _key(expand("*c1ccccc1", Chem.MolToMolBlock(m))) == _key("CN(C)c1ccccc1")
     m.GetAtomWithIdx(0).SetProp("molFileAlias", "R1")        # a real R-group stays '*'
     assert expand("*c1ccccc1", Chem.MolToMolBlock(m)) == "*c1ccccc1"
+    # an R' drawn as a picture and read as Pd: the chain end on the picture becomes
+    # '*'; without a picture nothing changes
+    from PIL import Image
+    from rdkit.Chem import rdDepictor
+    from pipeline.molecule_engine import postprocess_smiles
+    m = Chem.MolFromSmiles("[Pd]c1ccc(C)cc1")
+    rdDepictor.Compute2DCoords(m)
+    conf = m.GetConformer()
+    xs = [conf.GetAtomPosition(i).x for i in range(m.GetNumAtoms())]
+    ys = [conf.GetAtomPosition(i).y for i in range(m.GetNumAtoms())]
+    for i in range(m.GetNumAtoms()):  # into MolScribe's frame: x 0..10, y 1..-9
+        p = conf.GetAtomPosition(i)
+        conf.SetAtomPosition(i, (10 * (p.x - min(xs)) / (max(xs) - min(xs) or 1),
+                                 1 - 10 * (p.y - min(ys)) / (max(ys) - min(ys) or 1), 0))
+    pd = conf.GetAtomPosition(0)
+    px, py = pd.x / 10, (1 - pd.y) / 10
+    raw = {"smiles": "[Pd]c1ccc(C)cc1", "molfile": Chem.MolToMolBlock(m),
+           "crop": Image.new("RGB", (100, 100)), "bbox": [0, 0, 1, 1]}
+    assert _key(postprocess_smiles(raw, [(px - .03, py - .03, px + .03, py + .03)])) == _key("*c1ccc(C)cc1")
+    assert _key(postprocess_smiles(raw, [])) == _key("[Pd]c1ccc(C)cc1")
     print("scoring self-check OK")
 
 
@@ -345,9 +365,10 @@ def run(only: list[str] | None = None, fresh: bool = False, cache_only: bool = F
         if only and name not in only:
             continue
         t0 = time.time()
-        _, raw_mols, raw_rxns = model_outputs(
+        pdf_pages, raw_mols, raw_rxns = model_outputs(
             f"synthetic/{name}", (CASES_DIR / f"{name}.pdf").read_bytes(), fresh, cache_only)
-        mols, rxns = molecules_from_raw(raw_mols), reactions_from_raw(raw_rxns)
+        mols = molecules_from_raw(raw_mols, [pg.label_images for pg in pdf_pages])
+        rxns = reactions_from_raw(raw_rxns)
         dt = time.time() - t0
         case = {"case": name, "seconds": round(dt, 1), "pages": []}
         for i, spec in enumerate(pages):

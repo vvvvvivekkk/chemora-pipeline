@@ -12,7 +12,7 @@ NOT need the system 'poppler' library — one less thing to break on deployment.
 from __future__ import annotations
 
 import io
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from PIL import Image
 
@@ -25,9 +25,19 @@ class RenderedPage:
 
     index   : 0-based page number (page 0 is the first page).
     image   : the page as a PIL Image (what the models and the UI both use).
+    label_images : normalised (x1, y1, x2, y2) boxes of glyph-sized pictures
+                   embedded in the page. Some publishers paste R-group labels
+                   (R', R'' in a coloured circle/box) into vector drawings as
+                   tiny images; post-processing uses these boxes to find them.
     """
     index: int
     image: Image.Image
+    label_images: list = field(default_factory=list)
+
+
+# An embedded image smaller than this (fraction of page width and height) is a
+# label glyph, not a figure: a whole structure drawn as an image is far bigger.
+LABEL_IMAGE_MAX = 0.05
 
 
 def pdf_to_images(pdf_bytes: bytes) -> list[RenderedPage]:
@@ -70,6 +80,13 @@ def pdf_to_images(pdf_bytes: bytes) -> list[RenderedPage]:
             # the rest of the pipeline and Streamlit expect.
             png_bytes = pixmap.tobytes("png")
             image = Image.open(io.BytesIO(png_bytes)).convert("RGB")
-            pages.append(RenderedPage(index=i, image=image))
+            r = page.rect
+            labels = []
+            for info in page.get_image_info():
+                x1, y1, x2, y2 = info["bbox"]
+                b = (x1 / r.width, y1 / r.height, x2 / r.width, y2 / r.height)
+                if b[2] - b[0] < LABEL_IMAGE_MAX and b[3] - b[1] < LABEL_IMAGE_MAX:
+                    labels.append(b)
+            pages.append(RenderedPage(index=i, image=image, label_images=labels))
 
     return pages
