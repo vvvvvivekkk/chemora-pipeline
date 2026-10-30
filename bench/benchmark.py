@@ -257,6 +257,26 @@ def score_reaction(expected: str, predicted: list[tuple[list[str], list[str]]]) 
     return "missed" if not predicted else "wrong"
 
 
+def _molscribe_raw(smiles):
+    """A raw result as MolScribe would give it for `smiles` drawn on a whole page,
+    plus a function: atom index -> (x, y) on the page. For self-checks."""
+    from PIL import Image
+    from rdkit import Chem
+    from rdkit.Chem import rdDepictor
+    m = Chem.MolFromSmiles(smiles)
+    rdDepictor.Compute2DCoords(m)
+    conf = m.GetConformer()
+    xs = [conf.GetAtomPosition(i).x for i in range(m.GetNumAtoms())]
+    ys = [conf.GetAtomPosition(i).y for i in range(m.GetNumAtoms())]
+    for i in range(m.GetNumAtoms()):  # into MolScribe's frame: x 0..10, y 1..-9
+        p = conf.GetAtomPosition(i)
+        conf.SetAtomPosition(i, (10 * (p.x - min(xs)) / (max(xs) - min(xs) or 1),
+                                 1 - 10 * (p.y - min(ys)) / (max(ys) - min(ys) or 1), 0))
+    raw = {"smiles": smiles, "molfile": Chem.MolToMolBlock(m),
+           "crop": Image.new("RGB", (100, 100)), "bbox": [0, 0, 1, 1]}
+    return raw, lambda i: (conf.GetAtomPosition(i).x / 10, (1 - conf.GetAtomPosition(i).y) / 10)
+
+
 def check():
     s = score_page(["c1ccccc1", "CCO", "N[C@@H](C)C(=O)O"],
                    ["C1=CC=CC=C1", "N[C@H](C)C(=O)O", "CCCCCC"])
@@ -285,26 +305,22 @@ def check():
     assert _key(expand("*c1ccccc1", Chem.MolToMolBlock(m))) == _key("CN(C)c1ccccc1")
     m.GetAtomWithIdx(0).SetProp("molFileAlias", "R1")        # a real R-group stays '*'
     assert expand("*c1ccccc1", Chem.MolToMolBlock(m)) == "*c1ccccc1"
-    # an R' drawn as a picture and read as Pd: the chain end on the picture becomes
-    # '*'; without a picture nothing changes
+    # page evidence: an R' drawn as a picture and read as Pd; a '+' drawn as lines
     from PIL import Image
-    from rdkit.Chem import rdDepictor
     from pipeline.molecule_engine import postprocess_smiles
-    m = Chem.MolFromSmiles("[Pd]c1ccc(C)cc1")
-    rdDepictor.Compute2DCoords(m)
-    conf = m.GetConformer()
-    xs = [conf.GetAtomPosition(i).x for i in range(m.GetNumAtoms())]
-    ys = [conf.GetAtomPosition(i).y for i in range(m.GetNumAtoms())]
-    for i in range(m.GetNumAtoms()):  # into MolScribe's frame: x 0..10, y 1..-9
-        p = conf.GetAtomPosition(i)
-        conf.SetAtomPosition(i, (10 * (p.x - min(xs)) / (max(xs) - min(xs) or 1),
-                                 1 - 10 * (p.y - min(ys)) / (max(ys) - min(ys) or 1), 0))
-    pd = conf.GetAtomPosition(0)
-    px, py = pd.x / 10, (1 - pd.y) / 10
-    raw = {"smiles": "[Pd]c1ccc(C)cc1", "molfile": Chem.MolToMolBlock(m),
-           "crop": Image.new("RGB", (100, 100)), "bbox": [0, 0, 1, 1]}
-    assert _key(postprocess_smiles(raw, [(px - .03, py - .03, px + .03, py + .03)])) == _key("*c1ccc(C)cc1")
-    assert _key(postprocess_smiles(raw, [])) == _key("[Pd]c1ccc(C)cc1")
+    from pipeline.pdf_utils import RenderedPage
+    raw, at = _molscribe_raw("[Pd]c1ccc(C)cc1")
+    px, py = at(0)
+    page = lambda **kw: RenderedPage(index=0, image=Image.new("RGB", (10, 10)), **kw)
+    assert _key(postprocess_smiles(raw, page(label_images=[(px - .03, py - .03, px + .03, py + .03)]))) \
+        == _key("*c1ccc(C)cc1")                                  # chain end on the picture -> '*'
+    assert _key(postprocess_smiles(raw, page())) == _key("[Pd]c1ccc(C)cc1")  # no picture: unchanged
+    raw, at = _molscribe_raw("C=Cc1ccccc1")                      # atom 1: C with 3 bonds' worth
+    x, y = at(1)
+    assert _key(postprocess_smiles(raw, page(plus_signs=[(x - .02, y)]))) == _key("C=[C+]c1ccccc1")
+    raw, at = _molscribe_raw("C=C(C)c1ccccc1")                   # atom 1 has 4 bonds' worth
+    x, y = at(1)
+    assert _key(postprocess_smiles(raw, page(plus_signs=[(x - .02, y)]))) == _key("C=C(C)c1ccccc1")
     # reaction parts get the same post-processing as structures
     from pipeline.reaction_engine import reactions_from_raw
     rx = reactions_from_raw([{"reactions": [{"reactants": [{"smiles": "[Fl]c1ccccc1"}],
@@ -378,9 +394,8 @@ def run(only: list[str] | None = None, fresh: bool = False, cache_only: bool = F
         t0 = time.time()
         pdf_pages, raw_mols, raw_rxns = model_outputs(
             f"synthetic/{name}", (CASES_DIR / f"{name}.pdf").read_bytes(), fresh, cache_only)
-        mols = molecules_from_raw(raw_mols, [pg.label_images for pg in pdf_pages])
-        rxns = reactions_from_raw(raw_rxns, [pg.label_images for pg in pdf_pages],
-                                  [pg.image.size for pg in pdf_pages])
+        mols = molecules_from_raw(raw_mols, pdf_pages)
+        rxns = reactions_from_raw(raw_rxns, pdf_pages)
         dt = time.time() - t0
         case = {"case": name, "seconds": round(dt, 1), "pages": []}
         for i, spec in enumerate(pages):

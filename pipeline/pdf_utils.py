@@ -25,6 +25,8 @@ class RenderedPage:
 
     index   : 0-based page number (page 0 is the first page).
     image   : the page as a PIL Image (what the models and the UI both use).
+    plus_signs   : normalised (x, y) centres of '+' signs drawn as vector lines
+                   (charges in schemes, which the models ignore).
     label_images : normalised (x1, y1, x2, y2) boxes of glyph-sized pictures
                    embedded in the page. Some publishers paste R-group labels
                    (R', R'' in a coloured circle/box) into vector drawings as
@@ -33,11 +35,36 @@ class RenderedPage:
     index: int
     image: Image.Image
     label_images: list = field(default_factory=list)
+    plus_signs: list = field(default_factory=list)  # (x, y) of '+' drawn as two crossed lines
 
 
 # An embedded image smaller than this (fraction of page width and height) is a
 # label glyph, not a figure: a whole structure drawn as an image is far bigger.
 LABEL_IMAGE_MAX = 0.05
+
+
+def _plus_signs(page) -> list[tuple[float, float]]:
+    """Centres of '+' signs drawn as two stroked lines: one horizontal, one
+    vertical, equal length, crossing at their midpoints, glyph-sized."""
+    import math
+    W, H = page.rect.width, page.rect.height
+    found = []
+    for d in page.get_drawings():
+        items = d["items"]
+        if d.get("fill") is not None or len(items) != 2 or any(it[0] != "l" for it in items):
+            continue
+        (a1, a2), (b1, b2) = [(it[1], it[2]) for it in items]
+        la, lb = math.dist(a1, a2), math.dist(b1, b2)
+        if not (0.5 < la < 0.015 * W and abs(la - lb) < 0.25 * max(la, lb)):
+            continue
+        flat = lambda p, q: abs(p.y - q.y) < 0.1 * math.dist(p, q)
+        upright = lambda p, q: abs(p.x - q.x) < 0.1 * math.dist(p, q)
+        if not ((flat(a1, a2) and upright(b1, b2)) or (upright(a1, a2) and flat(b1, b2))):
+            continue
+        ma, mb = ((a1.x + a2.x) / 2, (a1.y + a2.y) / 2), ((b1.x + b2.x) / 2, (b1.y + b2.y) / 2)
+        if math.dist(ma, mb) <= 0.15 * la:
+            found.append((ma[0] / W, ma[1] / H))
+    return found
 
 
 def pdf_to_images(pdf_bytes: bytes) -> list[RenderedPage]:
@@ -87,6 +114,7 @@ def pdf_to_images(pdf_bytes: bytes) -> list[RenderedPage]:
                 b = (x1 / r.width, y1 / r.height, x2 / r.width, y2 / r.height)
                 if b[2] - b[0] < LABEL_IMAGE_MAX and b[3] - b[1] < LABEL_IMAGE_MAX:
                     labels.append(b)
-            pages.append(RenderedPage(index=i, image=image, label_images=labels))
+            pages.append(RenderedPage(index=i, image=image, label_images=labels,
+                                      plus_signs=_plus_signs(page)))
 
     return pages

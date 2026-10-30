@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import math
 import re
+import statistics
 from dataclasses import dataclass
 
 from PIL import Image
@@ -125,14 +126,61 @@ def _pad_bbox(bbox, pad: float):
     return (max(0.0, x1 - dx), max(0.0, y1 - dy), min(1.0, x2 + dx), min(1.0, y2 + dy))
 
 
-def postprocess_smiles(raw: dict, label_images=()) -> str | None:
+def postprocess_smiles(raw: dict, page=None) -> str | None:
     """All post-processing of one raw MolScribe result -> the SMILES shown on the canvas.
 
-    label_images: the page's glyph-sized embedded pictures (RenderedPage.label_images).
+    page: the RenderedPage it came from (optional). Its picture-labels and drawn
+    '+' signs are evidence for the fixes below.
     """
-    rgroups = _atoms_on_label_images(raw, label_images)
-    smiles = expand_unexpanded_labels(raw.get("smiles"), raw.get("molfile"), rgroups)
+    mol, on_page = _molfile_on_page(raw)
+    rgroups = _atoms_on_label_images(mol, on_page, page.label_images if page else ())
+    cations = _atoms_at_plus_signs(mol, on_page, page.plus_signs if page else ())
+    smiles = expand_unexpanded_labels(raw.get("smiles"), raw.get("molfile"), rgroups, cations)
     return clean_model_smiles(repair_bond_orders(smiles))
+
+
+def _molfile_on_page(raw: dict):
+    """MolScribe's molfile as a mol, plus a function: atom index -> (x, y) on the page."""
+    molfile, bbox = raw.get("molfile"), raw.get("bbox")
+    # crop image size; reaction parts carry only "size" (their crop isn't kept)
+    size = raw["crop"].size if raw.get("crop") is not None else raw.get("size")
+    if not (molfile and bbox and size and size[1]):
+        return None, None
+    from rdkit import Chem
+    mol = Chem.MolFromMolBlock(molfile, sanitize=False, removeHs=False)
+    if mol is None or not mol.GetNumConformers():
+        return None, None
+    conf, ratio = mol.GetConformer(), size[0] / size[1]
+    x1, y1, x2, y2 = bbox
+
+    def on_page(i):  # MolScribe writes (10*ratio*x, 1 - 10*y) for crop fractions x, y
+        p = conf.GetAtomPosition(i)
+        return x1 + p.x / (10 * ratio) * (x2 - x1), y1 + (1 - p.y) / 10 * (y2 - y1)
+
+    return mol, on_page
+
+
+def _atoms_at_plus_signs(mol, on_page, signs) -> set[int]:
+    """Carbons drawn with a '+' next to them (carbocations); MolScribe ignores the sign.
+
+    A sign is given to the nearest atom within one bond length, and only if that
+    atom is a neutral carbon with three bonds' worth of bonding, so the '+'
+    replaces its implicit H. A '+' over a reaction arrow (H+) is too far from
+    any atom; an N next to a '+' is left alone (MolScribe reads N+ itself).
+    """
+    if not signs or mol is None or not mol.GetNumBonds():
+        return set()
+    bond = statistics.median(math.dist(on_page(b.GetBeginAtomIdx()), on_page(b.GetEndAtomIdx()))
+                             for b in mol.GetBonds())
+    found = set()
+    for sign in signs:
+        near = min(mol.GetAtoms(), key=lambda a: math.dist(on_page(a.GetIdx()), sign))
+        if math.dist(on_page(near.GetIdx()), sign) > bond:
+            continue
+        if (near.GetSymbol() == "C" and near.GetFormalCharge() == 0
+                and sum(b.GetBondTypeAsDouble() for b in near.GetBonds()) == 3):
+            found.add(near.GetIdx())
+    return found
 
 
 def repair_bond_orders(smiles: str | None) -> str | None:
@@ -195,7 +243,7 @@ def repair_bond_orders(smiles: str | None) -> str | None:
 _PLAIN_ENDS = {"C", "N", "O", "S", "P", "F", "Cl", "Br", "I", "B", "Si", "Se", "H"}
 
 
-def _atoms_on_label_images(raw: dict, boxes) -> set[int]:
+def _atoms_on_label_images(mol, on_page, boxes) -> set[int]:
     """Atoms MolScribe placed on a picture-label (an R', R'' drawn as an image).
 
     MolScribe can't read such a picture and emits an arbitrary element there.
@@ -203,22 +251,8 @@ def _atoms_on_label_images(raw: dict, boxes) -> set[int]:
     and mark it as an R-group only if it is not something a structure plainly
     ends in: a real CH3, F or OH next to an image is never touched.
     """
-    molfile, bbox = raw.get("molfile"), raw.get("bbox")
-    # crop image size; reaction parts carry only "size" (their crop isn't kept)
-    size = raw["crop"].size if raw.get("crop") is not None else raw.get("size")
-    if not (boxes and molfile and bbox and size and size[1]):
+    if not boxes or mol is None:
         return set()
-    from rdkit import Chem
-    mol = Chem.MolFromMolBlock(molfile, sanitize=False, removeHs=False)
-    if mol is None or not mol.GetNumConformers():
-        return set()
-    conf, ratio = mol.GetConformer(), size[0] / size[1]
-    x1, y1, x2, y2 = bbox
-
-    def on_page(i):  # MolScribe writes (10*ratio*x, 1 - 10*y) for crop fractions x, y
-        p = conf.GetAtomPosition(i)
-        return x1 + p.x / (10 * ratio) * (x2 - x1), y1 + (1 - p.y) / 10 * (y2 - y1)
-
     ends = [a for a in mol.GetAtoms() if a.GetDegree() == 1]
     found = set()
     for bx1, by1, bx2, by2 in boxes:
@@ -236,7 +270,7 @@ _GROUP_TIMES_N = re.compile(r"^([A-Z][a-z]?)(Me|Et|Pr|Bu|Ph)(\d)$")
 
 
 def expand_unexpanded_labels(smiles: str | None, molfile: str | None,
-                             rgroup_atoms=frozenset()) -> str | None:
+                             rgroup_atoms=frozenset(), cation_atoms=frozenset()) -> str | None:
     """Second chance for atom labels MolScribe read but could not expand.
 
     MolScribe left those atoms as '*'. Its formula parser reads 'NMe2' greedily
@@ -244,10 +278,10 @@ def expand_unexpanded_labels(smiles: str | None, molfile: str | None,
     it parses 'N(Me)2' fine. We redo MolScribe's own expansion from its molfile
     (which keeps the labels) with that retry added, and use the result only if
     it has fewer '*' atoms than before — otherwise the original stands.
-    rgroup_atoms (molfile atom indices) are first turned into R-groups; then the
-    rebuilt result is used as is.
+    rgroup_atoms / cation_atoms (molfile atom indices) are first turned into
+    R-groups / given a + charge; then the rebuilt result is used as is.
     """
-    if not smiles or not molfile or ("*" not in smiles and not rgroup_atoms):
+    if not smiles or not molfile or ("*" not in smiles and not rgroup_atoms and not cation_atoms):
         return smiles
     try:
         from rdkit import Chem
@@ -264,6 +298,11 @@ def expand_unexpanded_labels(smiles: str | None, molfile: str | None,
         atom.SetFormalCharge(0)
         atom.SetNoImplicit(True)
         Chem.SetAtomAlias(atom, "R")  # MolScribe leaves R-groups as '*'
+    for i in cation_atoms:
+        atom = mol.GetAtomWithIdx(i)
+        atom.SetFormalCharge(1)  # the '+' takes the place of the implicit H
+        atom.SetNoImplicit(True)
+        atom.SetNumExplicitHs(0)
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 0:
             # RDKit names molfile dummies 'R'; MolScribe only expands atoms named '*'
@@ -286,7 +325,7 @@ def expand_unexpanded_labels(smiles: str | None, molfile: str | None,
         return smiles
     finally:
         chemistry.get_smiles_from_symbol = parse
-    if rgroup_atoms:
+    if rgroup_atoms or cation_atoms:
         return redone
     return redone if redone.count("*") < smiles.count("*") else smiles
 
@@ -366,7 +405,7 @@ def extract_molecules_from_pdf(pdf_path: str) -> list[DetectedMolecule]:
 # ---------------------------------------------------------------------------
 # PAGE-IMAGE PATH: molecules from pre-rendered page images (no layoutparser)
 # ---------------------------------------------------------------------------
-def extract_molecules_from_images(images: list[Image.Image], label_images=None) -> list[DetectedMolecule]:
+def extract_molecules_from_images(images: list[Image.Image], pages=None) -> list[DetectedMolecule]:
     """Run OpenChemIE's MolDetect+MolScribe directly on page images.
 
     We pass the pages we already rendered (PyMuPDF) instead of the PDF, so
@@ -381,7 +420,7 @@ def extract_molecules_from_images(images: list[Image.Image], label_images=None) 
         raw = read_molecules_raw(images)
     except Exception as exc:
         return [DetectedMolecule(smiles=f"[molecule model error: {exc}]", confidence=0.0)]
-    return molecules_from_raw(raw, label_images)
+    return molecules_from_raw(raw, pages)
 
 
 def read_molecules_raw(images: list[Image.Image]) -> list[list[dict]]:
@@ -422,16 +461,16 @@ def read_molecules_raw(images: list[Image.Image]) -> list[list[dict]]:
     return pages
 
 
-def molecules_from_raw(raw_pages: list[list[dict]], label_images=None) -> list[DetectedMolecule]:
+def molecules_from_raw(raw_pages: list[list[dict]], pages=None) -> list[DetectedMolecule]:
     """Post-processing step (fast): cleanup -> DetectedMolecule. Page = list index.
 
-    label_images: per page, RenderedPage.label_images (optional).
+    pages: the RenderedPages (optional), for evidence from the PDF itself.
     """
     molecules: list[DetectedMolecule] = []
     for page_idx, items in enumerate(raw_pages):
-        labels = label_images[page_idx] if label_images and page_idx < len(label_images) else ()
+        page = pages[page_idx] if pages and page_idx < len(pages) else None
         for m in items:
-            smi = postprocess_smiles(m, labels)
+            smi = postprocess_smiles(m, page)
             if smi:
                 molecules.append(DetectedMolecule(
                     smiles=smi, confidence=m.get("confidence", 1.0), page=page_idx,

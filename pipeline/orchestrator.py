@@ -94,11 +94,11 @@ def process_pdf(pdf_bytes: bytes, progress_callback=None, engine: str | None = N
         images = [pr.image for pr in result.pages]
 
         _progress(0.2, "Loading models & detecting molecules in page images…")
-        for det in extract_molecules_from_images(images, [p.label_images for p in pages]):
+        for det in extract_molecules_from_images(images, pages):
             _attach_molecule(by_index, result.pages, det)
 
         _progress(0.6, "Detecting reactions in page images…")
-        for rxn in extract_reactions_from_images(images, [p.label_images for p in pages]):
+        for rxn in extract_reactions_from_images(images, pages):
             _attach_reaction(by_index, result.pages, rxn)
 
         _progress(
