@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from PIL import Image
 
 from . import config
-from .molecule_engine import _get_openchemie, _coerce_smiles
+from .molecule_engine import _get_openchemie, _coerce_smiles, postprocess_smiles
 
 
 @dataclass
@@ -52,7 +52,7 @@ def extract_reactions_from_pdf(pdf_path: str) -> list[DetectedReaction]:
     return reactions
 
 
-def extract_reactions_from_images(images: list[Image.Image]) -> list[DetectedReaction]:
+def extract_reactions_from_images(images: list[Image.Image], label_images=None) -> list[DetectedReaction]:
     """Run OpenChemIE's RxnScribe directly on pre-rendered page images.
 
     Same rationale as ``molecule_engine.extract_molecules_from_images``: bypass
@@ -66,7 +66,7 @@ def extract_reactions_from_images(images: list[Image.Image]) -> list[DetectedRea
     except Exception as exc:
         return [DetectedReaction(conditions=[f"[reaction model error: {exc}]"],
                                  confidence=0.0)]
-    return reactions_from_raw(raw)
+    return reactions_from_raw(raw, label_images, [im.size for im in images])
 
 
 def read_reactions_raw(images: list[Image.Image]) -> list[dict]:
@@ -76,11 +76,17 @@ def read_reactions_raw(images: list[Image.Image]) -> list[dict]:
     return [_jsonable(fig) for fig in model.extract_reactions_from_figures(images) or []]
 
 
-def reactions_from_raw(raw_pages: list[dict]) -> list[DetectedReaction]:
-    """Post-processing step (fast): raw dicts -> DetectedReaction. Page = list index."""
+def reactions_from_raw(raw_pages: list[dict], label_images=None, page_sizes=None) -> list[DetectedReaction]:
+    """Post-processing step (fast): raw dicts -> DetectedReaction. Page = list index.
+
+    Reactants and products get the same post-processing as structures; for that
+    it needs, per page, RenderedPage.label_images and the page image size.
+    """
     reactions: list[DetectedReaction] = []
     for page_idx, fig in enumerate(raw_pages):
-        for rxn in _reactions_from_openchemie_figure(fig):
+        labels = label_images[page_idx] if label_images and page_idx < len(label_images) else ()
+        size = page_sizes[page_idx] if page_sizes and page_idx < len(page_sizes) else None
+        for rxn in _reactions_from_openchemie_figure(fig, labels, size):
             rxn.page = page_idx
             reactions.append(rxn)
     return reactions
@@ -98,7 +104,7 @@ def _jsonable(x):
     return x
 
 
-def _reactions_from_openchemie_figure(fig: dict) -> list[DetectedReaction]:
+def _reactions_from_openchemie_figure(fig: dict, labels=(), page_size=None) -> list[DetectedReaction]:
     """Pull reactions out of one OpenChemIE figure-result dict."""
     out: list[DetectedReaction] = []
     # OpenChemIE 'page' is 0-based (verified in source) — matches our page index.
@@ -115,8 +121,8 @@ def _reactions_from_openchemie_figure(fig: dict) -> list[DetectedReaction]:
         if not isinstance(rxn, dict):
             continue
         out.append(DetectedReaction(
-            reactants=_smiles_list(rxn.get("reactants")),
-            products=_smiles_list(rxn.get("products")),
+            reactants=_smiles_list(rxn.get("reactants"), labels, page_size),
+            products=_smiles_list(rxn.get("products"), labels, page_size),
             conditions=_text_list(rxn.get("conditions")),
             confidence=_score(rxn),
             page=page0,
@@ -124,10 +130,20 @@ def _reactions_from_openchemie_figure(fig: dict) -> list[DetectedReaction]:
     return out
 
 
-def _smiles_list(items) -> list[str]:
+def _smiles_list(items, labels=(), page_size=None) -> list[str]:
+    """Reaction parts, post-processed exactly like structures (postprocess_smiles).
+
+    RxnScribe reads each part with its own MolScribe call, so without this the
+    canvas would show the raw misreads that structures already have fixed.
+    """
     out = []
     for it in items or []:
-        smi = _coerce_smiles(it)
+        raw = dict(it) if isinstance(it, dict) else {}
+        raw["smiles"] = _coerce_smiles(it)
+        if page_size and raw.get("bbox"):
+            x1, y1, x2, y2 = raw["bbox"]  # RxnScribe crops exactly this box of the page
+            raw["size"] = ((x2 - x1) * page_size[0], (y2 - y1) * page_size[1])
+        smi = postprocess_smiles(raw, labels)
         if smi:
             out.append(smi)
     return out

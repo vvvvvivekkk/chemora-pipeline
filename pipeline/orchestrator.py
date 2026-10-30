@@ -98,7 +98,7 @@ def process_pdf(pdf_bytes: bytes, progress_callback=None, engine: str | None = N
             _attach_molecule(by_index, result.pages, det)
 
         _progress(0.6, "Detecting reactions in page images…")
-        for rxn in extract_reactions_from_images(images):
+        for rxn in extract_reactions_from_images(images, [p.label_images for p in pages]):
             _attach_reaction(by_index, result.pages, rxn)
 
         _progress(

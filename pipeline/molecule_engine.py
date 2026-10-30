@@ -147,14 +147,16 @@ def _atoms_on_label_images(raw: dict, boxes) -> set[int]:
     and mark it as an R-group only if it is not something a structure plainly
     ends in: a real CH3, F or OH next to an image is never touched.
     """
-    molfile, crop, bbox = raw.get("molfile"), raw.get("crop"), raw.get("bbox")
-    if not (boxes and molfile and crop is not None and bbox):
+    molfile, bbox = raw.get("molfile"), raw.get("bbox")
+    # crop image size; reaction parts carry only "size" (their crop isn't kept)
+    size = raw["crop"].size if raw.get("crop") is not None else raw.get("size")
+    if not (boxes and molfile and bbox and size and size[1]):
         return set()
     from rdkit import Chem
     mol = Chem.MolFromMolBlock(molfile, sanitize=False, removeHs=False)
     if mol is None or not mol.GetNumConformers():
         return set()
-    conf, ratio = mol.GetConformer(), crop.width / crop.height
+    conf, ratio = mol.GetConformer(), size[0] / size[1]
     x1, y1, x2, y2 = bbox
 
     def on_page(i):  # MolScribe writes (10*ratio*x, 1 - 10*y) for crop fractions x, y

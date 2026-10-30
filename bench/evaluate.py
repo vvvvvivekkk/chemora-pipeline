@@ -102,9 +102,9 @@ def match_structures(key, raw_mols, label_images=None):
     return rows, fps
 
 
-def match_reactions(key, raw_rxns):
+def match_reactions(key, raw_rxns, label_images=None, page_sizes=None):
     from pipeline.reaction_engine import reactions_from_raw
-    model = reactions_from_raw(raw_rxns)
+    model = reactions_from_raw(raw_rxns, label_images, page_sizes)
     keyset = lambda smis: sorted(_key(s) or s for s in smis)
     used, rows = set(), []
     for k in key["reactions"]:
@@ -240,7 +240,8 @@ def main(paper):
     pages, raw_mols, raw_rxns = model_outputs(paper, (ROOT / "papers" / f"{paper}.pdf").read_bytes(),
                                               cache_only=True)
     rows, fps = match_structures(key, raw_mols, [pg.label_images for pg in pages])
-    rrows, rfps = match_reactions(key, raw_rxns)
+    rrows, rfps = match_reactions(key, raw_rxns, [pg.label_images for pg in pages],
+                                  [pg.image.size for pg in pages])
     syn = run_synthetic(cache_only=True)
 
     n = len(rows)

@@ -305,6 +305,11 @@ def check():
            "crop": Image.new("RGB", (100, 100)), "bbox": [0, 0, 1, 1]}
     assert _key(postprocess_smiles(raw, [(px - .03, py - .03, px + .03, py + .03)])) == _key("*c1ccc(C)cc1")
     assert _key(postprocess_smiles(raw, [])) == _key("[Pd]c1ccc(C)cc1")
+    # reaction parts get the same post-processing as structures
+    from pipeline.reaction_engine import reactions_from_raw
+    rx = reactions_from_raw([{"reactions": [{"reactants": [{"smiles": "[Fl]c1ccccc1"}],
+                                             "products": [{"smiles": "CC.[Pd]"}]}]}])
+    assert rx[0].reactants == ["*c1ccccc1"] and rx[0].products == ["CC"]
     print("scoring self-check OK")
 
 
@@ -368,7 +373,8 @@ def run(only: list[str] | None = None, fresh: bool = False, cache_only: bool = F
         pdf_pages, raw_mols, raw_rxns = model_outputs(
             f"synthetic/{name}", (CASES_DIR / f"{name}.pdf").read_bytes(), fresh, cache_only)
         mols = molecules_from_raw(raw_mols, [pg.label_images for pg in pdf_pages])
-        rxns = reactions_from_raw(raw_rxns)
+        rxns = reactions_from_raw(raw_rxns, [pg.label_images for pg in pdf_pages],
+                                  [pg.image.size for pg in pdf_pages])
         dt = time.time() - t0
         case = {"case": name, "seconds": round(dt, 1), "pages": []}
         for i, spec in enumerate(pages):
