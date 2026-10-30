@@ -310,6 +310,12 @@ def check():
     rx = reactions_from_raw([{"reactions": [{"reactants": [{"smiles": "[Fl]c1ccccc1"}],
                                              "products": [{"smiles": "CC.[Pd]"}]}]}])
     assert rx[0].reactants == ["*c1ccccc1"] and rx[0].products == ["CC"]
+    # bond-order repair: 5i as MolScribe read it (two carbons with valence 5)
+    from pipeline.molecule_engine import repair_bond_orders as repair
+    bad_5i = "CC1=CC=C(C2=CC3=C(=C4=C2SC2=C4C=CC=C2)C(=O)N(C)C(=O)N3C)C=C1"
+    assert _key(repair(bad_5i)) == _key("Cc1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3c2sc2ccccc23)cc1")
+    assert repair("C(=C)(=C)=C") == "C(=C)(=C)=C"     # over by 2: too broken, stays invalid
+    assert repair("Cc1ccccc1") == "Cc1ccccc1"         # valid input untouched
     print("scoring self-check OK")
 
 

@@ -131,7 +131,63 @@ def postprocess_smiles(raw: dict, label_images=()) -> str | None:
     label_images: the page's glyph-sized embedded pictures (RenderedPage.label_images).
     """
     rgroups = _atoms_on_label_images(raw, label_images)
-    return clean_model_smiles(expand_unexpanded_labels(raw.get("smiles"), raw.get("molfile"), rgroups))
+    smiles = expand_unexpanded_labels(raw.get("smiles"), raw.get("molfile"), rgroups)
+    return clean_model_smiles(repair_bond_orders(smiles))
+
+
+def repair_bond_orders(smiles: str | None) -> str | None:
+    """Fix a small double-bond mistake in an otherwise correctly read ring system.
+
+    MolScribe can get every atom and bond of a fused aromatic system right but
+    put two double bonds on one carbon (valence 5), so RDKit rejects the whole
+    structure. If at most two atoms are over-valent, each by exactly one bond,
+    the double bonds of the fused ring system around them are re-derived (marked
+    aromatic, RDKit finds a valid alternating form). Atoms and connectivity are
+    never changed. Anything more broken stays invalid, so the UI keeps warning
+    the chemist instead of showing a valid-looking guess.
+    """
+    if not smiles:
+        return smiles
+    from rdkit import Chem, RDLogger
+    RDLogger.DisableLog("rdApp.*")
+    if Chem.MolFromSmiles(smiles) is not None:
+        return smiles
+    mol = Chem.MolFromSmiles(smiles, sanitize=False)
+    if mol is None:
+        return smiles
+    mol.UpdatePropertyCache(strict=False)
+    table = Chem.GetPeriodicTable()
+    over = []
+    for a in mol.GetAtoms():
+        if a.GetFormalCharge() or a.GetAtomicNum() == 0:
+            continue
+        excess = sum(b.GetBondTypeAsDouble() for b in a.GetBonds()) - max(table.GetValenceList(a.GetAtomicNum()))
+        if excess > 0:
+            over.append((a.GetIdx(), excess))
+    if not over or len(over) > 2 or any(e != 1 for _, e in over):
+        return smiles
+    Chem.FastFindRings(mol)
+    rings = [set(r) for r in mol.GetRingInfo().AtomRings()]
+    system = {i for idx, _ in over for r in rings if idx in r for i in r}
+    grew = True
+    while grew:  # the whole fused ring system, not just the first ring
+        grew = False
+        for r in rings:
+            if r & system and not r <= system:
+                system |= r
+                grew = True
+    for b in mol.GetBonds():
+        i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+        if i in system and j in system and any(i in r and j in r for r in rings):
+            b.SetBondType(Chem.BondType.AROMATIC)
+            b.SetIsAromatic(True)
+    for i in system:
+        mol.GetAtomWithIdx(i).SetIsAromatic(True)
+    try:
+        Chem.SanitizeMol(mol)
+    except Exception:
+        return smiles
+    return Chem.MolToSmiles(mol)
 
 
 # What a drawn structure can plainly end in. Anything else at a chain end that
