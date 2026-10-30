@@ -22,6 +22,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT.parent))
+from pipeline import config  # noqa: E402
+config.MAX_PAGES = 0  # benchmarks always process every page (keeps cache settings stable)
 CASES_DIR = ROOT / "cases"
 FONT = "C:/Windows/Fonts/arial.ttf"
 PAGE = (2550, 3300)  # US letter at 300 DPI
@@ -285,7 +287,7 @@ def check():
 CACHE_DIR = ROOT / "cache"
 
 
-def model_outputs(name: str, pdf_bytes: bytes, fresh: bool = False):
+def model_outputs(name: str, pdf_bytes: bytes, fresh: bool = False, cache_only: bool = False):
     """Raw model output for one PDF, cached in bench/cache/<name>/.
 
     Only the slow model step is cached (read_*_raw); the pipeline's
@@ -309,6 +311,8 @@ def model_outputs(name: str, pdf_bytes: bytes, fresh: bool = False):
                     cp = d / f"p{p + 1}_{i}.png"
                     m["crop"] = Image.open(cp) if cp.exists() else None
             return pages, data["molecules"], data["reactions"]
+    if cache_only:  # scoring must never start the model by accident
+        raise SystemExit(f"no usable cache for {name} (settings {meta}); run the model first")
     from pipeline.molecule_engine import read_molecules_raw
     from pipeline.reaction_engine import read_reactions_raw
     mols, rxns = [], []
@@ -326,7 +330,7 @@ def model_outputs(name: str, pdf_bytes: bytes, fresh: bool = False):
     return pages, mols, rxns
 
 
-def run(only: list[str] | None = None, fresh: bool = False):
+def run(only: list[str] | None = None, fresh: bool = False, cache_only: bool = False):
     from pipeline.molecule_engine import molecules_from_raw
     from pipeline.reaction_engine import reactions_from_raw
     out, t_all = [], time.time()
@@ -335,7 +339,7 @@ def run(only: list[str] | None = None, fresh: bool = False):
             continue
         t0 = time.time()
         _, raw_mols, raw_rxns = model_outputs(
-            f"synthetic/{name}", (CASES_DIR / f"{name}.pdf").read_bytes(), fresh)
+            f"synthetic/{name}", (CASES_DIR / f"{name}.pdf").read_bytes(), fresh, cache_only)
         mols, rxns = molecules_from_raw(raw_mols), reactions_from_raw(raw_rxns)
         dt = time.time() - t0
         case = {"case": name, "seconds": round(dt, 1), "pages": []}

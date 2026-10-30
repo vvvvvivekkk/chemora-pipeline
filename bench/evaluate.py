@@ -236,10 +236,11 @@ def _commit():
 
 def main(paper):
     key = json.loads((ROOT / "keys" / f"{paper}.json").read_text())
-    pages, raw_mols, raw_rxns = model_outputs(paper, (ROOT / "papers" / f"{paper}.pdf").read_bytes())
+    pages, raw_mols, raw_rxns = model_outputs(paper, (ROOT / "papers" / f"{paper}.pdf").read_bytes(),
+                                              cache_only=True)
     rows, fps = match_structures(key, raw_mols)
     rrows, rfps = match_reactions(key, raw_rxns)
-    syn = run_synthetic()
+    syn = run_synthetic(cache_only=True)
 
     n = len(rows)
     count = lambda st: sum(r["status"] == st for r in rows)
