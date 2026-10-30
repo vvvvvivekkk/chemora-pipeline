@@ -129,6 +129,9 @@ for row, labels in enumerate([("4a", "4b", "4c"), ("4d", "4e", "4f"), ("4g", "4h
     for col, lab in enumerate(labels):
         x1 = [0.18, 0.40, 0.62][col]
         add(4, lab, c4[lab], [x1, y1, x1 + 0.20, y1 + 0.16])
+# page 5 — Table 1 (optimisation of 4a -> 5a), vector drawing
+add(5, "4a", c4["4a"], [0.23, 0.15, 0.41, 0.31])
+add(5, "5a", c5["5a"], [0.55, 0.15, 0.76, 0.31])
 # page 6 — Scheme 3
 add(6, "4", G["4"], [0.19, 0.11, 0.40, 0.30])
 add(6, "5", G["5"], [0.57, 0.12, 0.78, 0.30])
@@ -154,6 +157,7 @@ R = [  # reactions: reactants >> products, reagents drawn as structures count as
     {"id": "S1-iii", "page": 3, "reactants": [G["3"], G["boronic"]], "products": [G["4"]]},
     {"id": "S1-iv", "page": 3, "reactants": [G["4"]], "products": [G["5"]]},
     {"id": "S2", "page": 4, "reactants": [G["3"], G["boronic"]], "products": [G["4"]]},
+    {"id": "T1", "page": 5, "reactants": [c4["4a"]], "products": [c5["5a"]]},
     {"id": "S3", "page": 6, "reactants": [G["4"]], "products": [G["5"]]},
     {"id": "S4a-1", "page": 7, "reactants": [c4["4d"]], "products": [G["Ia"]]},
     {"id": "S4a-2", "page": 7, "reactants": [G["Ia"]], "products": [c5["5d"]]},

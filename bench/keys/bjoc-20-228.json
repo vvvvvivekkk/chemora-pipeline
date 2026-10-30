@@ -393,6 +393,32 @@
    "junk": false
   },
   {
+   "id": "p5-4a",
+   "page": 5,
+   "label": "4a",
+   "smiles": "Cc1ccc(C#Cc2c(-c3ccc(C)cc3)c(=O)n(C)c(=O)n2C)cc1",
+   "box": [
+    0.23,
+    0.15,
+    0.41,
+    0.31
+   ],
+   "junk": false
+  },
+  {
+   "id": "p5-5a",
+   "page": 5,
+   "label": "5a",
+   "smiles": "Cc1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(C)cc23)cc1",
+   "box": [
+    0.55,
+    0.15,
+    0.76,
+    0.31
+   ],
+   "junk": false
+  },
+  {
    "id": "p6-4",
    "page": 6,
    "label": "4",
@@ -744,6 +770,16 @@
    ],
    "products": [
     "*c1ccc(C#Cc2c(-c3ccc(*)cc3)c(=O)n(C)c(=O)n2C)cc1"
+   ]
+  },
+  {
+   "id": "T1",
+   "page": 5,
+   "reactants": [
+    "Cc1ccc(C#Cc2c(-c3ccc(C)cc3)c(=O)n(C)c(=O)n2C)cc1"
+   ],
+   "products": [
+    "Cc1ccc(-c2cc3c(c(=O)n(C)c(=O)n3C)c3ccc(C)cc23)cc1"
    ]
   },
   {
