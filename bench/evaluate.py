@@ -63,7 +63,7 @@ def _iou(a, b):
 
 def match_structures(key, raw_mols):
     """Assign each crop to the key entry whose box holds the crop's centre (best IoU)."""
-    from pipeline.molecule_engine import clean_model_smiles
+    from pipeline.molecule_engine import postprocess_smiles
     crops = []
     for p, items in enumerate(raw_mols):
         for i, m in enumerate(items):
@@ -72,7 +72,7 @@ def match_structures(key, raw_mols):
             cands = [k for k in key["structures"] if k["page"] == p + 1 and _contains(k["box"], cx, cy)]
             best = max(cands, key=lambda k: _iou(k["box"], b), default=None)
             crops.append({"page": p + 1, "i": i, "bbox": b, "raw": m.get("smiles"),
-                          "final": clean_model_smiles(m.get("smiles")), "crop": m.get("crop"),
+                          "final": postprocess_smiles(m), "crop": m.get("crop"),
                           "confidence": m.get("confidence"), "key": best})
     # one crop per key entry: the best-overlapping; other crops on it are duplicates
     taken = {}

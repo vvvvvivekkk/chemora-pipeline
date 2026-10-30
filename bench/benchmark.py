@@ -278,6 +278,13 @@ def check():
     assert clean("CC(=O)[O-].[Na+]") == "CC(=O)[O-].[Na+]"  # real salt kept
     assert clean("C1CC(") == "C1CC("                  # invalid passes through to be flagged
     assert clean("CC.c1ccc(P(c2ccccc2)c2ccccc2)cc1") == "c1ccc(P(c2ccccc2)c2ccccc2)cc1"  # neighbour leak
+    from rdkit import Chem
+    from pipeline.molecule_engine import expand_unexpanded_labels as expand
+    m = Chem.MolFromSmiles("*c1ccccc1")
+    m.GetAtomWithIdx(0).SetProp("molFileAlias", "NMe2")      # MolScribe read 'NMe2' but left '*'
+    assert _key(expand("*c1ccccc1", Chem.MolToMolBlock(m))) == _key("CN(C)c1ccccc1")
+    m.GetAtomWithIdx(0).SetProp("molFileAlias", "R1")        # a real R-group stays '*'
+    assert expand("*c1ccccc1", Chem.MolToMolBlock(m)) == "*c1ccccc1"
     print("scoring self-check OK")
 
 

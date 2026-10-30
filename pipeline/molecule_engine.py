@@ -25,6 +25,7 @@ Design rules (unchanged): lazy load, cache, never crash the app.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from PIL import Image
@@ -121,6 +122,59 @@ def _pad_bbox(bbox, pad: float):
     x1, y1, x2, y2 = bbox
     dx, dy = (x2 - x1) * pad, (y2 - y1) * pad
     return (max(0.0, x1 - dx), max(0.0, y1 - dy), min(1.0, x2 + dx), min(1.0, y2 + dy))
+
+
+def postprocess_smiles(raw: dict) -> str | None:
+    """All post-processing of one raw MolScribe result -> the SMILES shown on the canvas."""
+    return clean_model_smiles(expand_unexpanded_labels(raw.get("smiles"), raw.get("molfile")))
+
+
+# 'NMe2', 'NEt2', ...: an element followed by a group and a count
+_GROUP_TIMES_N = re.compile(r"^([A-Z][a-z]?)(Me|Et|Pr|Bu|Ph)(\d)$")
+
+
+def expand_unexpanded_labels(smiles: str | None, molfile: str | None) -> str | None:
+    """Second chance for atom labels MolScribe read but could not expand.
+
+    MolScribe left those atoms as '*'. Its formula parser reads 'NMe2' greedily
+    as 'NMe' x 2 ('NMe' is one of its own abbreviations) and gives up, although
+    it parses 'N(Me)2' fine. We redo MolScribe's own expansion from its molfile
+    (which keeps the labels) with that retry added, and use the result only if
+    it has fewer '*' atoms than before — otherwise the original stands.
+    """
+    if not smiles or "*" not in smiles or not molfile:
+        return smiles
+    try:
+        from rdkit import Chem
+        from molscribe import chemistry  # type: ignore
+    except Exception:
+        return smiles
+    mol = Chem.MolFromMolBlock(molfile, sanitize=False, removeHs=False)
+    if mol is None:
+        return smiles
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 0:
+            # RDKit names molfile dummies 'R'; MolScribe only expands atoms named '*'
+            if atom.HasProp("dummyLabel"):
+                atom.ClearProp("dummyLabel")
+            if atom.HasProp("molFileAlias"):
+                Chem.SetAtomAlias(atom, atom.GetProp("molFileAlias"))
+
+    parse = chemistry.get_smiles_from_symbol
+
+    def parse_with_retry(symbol, mol, atom, bonds):
+        out = parse(symbol, mol, atom, bonds)
+        m = _GROUP_TIMES_N.match(symbol) if out is None and isinstance(symbol, str) else None
+        return parse(f"{m[1]}({m[2]}){m[3]}", mol, atom, bonds) if m else out
+
+    chemistry.get_smiles_from_symbol = parse_with_retry  # only for this call
+    try:
+        redone, _ = chemistry._expand_functional_group(mol, {})
+    except Exception:
+        return smiles
+    finally:
+        chemistry.get_smiles_from_symbol = parse
+    return redone if redone.count("*") < smiles.count("*") else smiles
 
 
 def clean_model_smiles(smiles: str | None) -> str | None:
@@ -259,7 +313,7 @@ def molecules_from_raw(raw_pages: list[list[dict]]) -> list[DetectedMolecule]:
     molecules: list[DetectedMolecule] = []
     for page_idx, items in enumerate(raw_pages):
         for m in items:
-            smi = clean_model_smiles(m.get("smiles"))
+            smi = postprocess_smiles(m)
             if smi:
                 molecules.append(DetectedMolecule(
                     smiles=smi, confidence=m.get("confidence", 1.0), page=page_idx,
