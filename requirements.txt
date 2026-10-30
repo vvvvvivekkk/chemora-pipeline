@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# Chemora Extract — Python dependencies
+# ---------------------------------------------------------------------------
+# OpenChemIE has a fragile, 2023-era pinned stack. The INSTALL ORDER matters and
+# a few things can't be expressed in a flat requirements.txt, so on Windows/CPU
+# prefer run_local.bat (or the manual steps in README "Option D"). Summary of the
+# verified local recipe:
+#
+#   conda create -y -n chemora python=3.9
+#   conda install -y -c conda-forge poppler pdftotext rdkit
+#   pip install torch==1.13.1 --index-url https://download.pytorch.org/whl/cpu
+#   pip install "OpenChemIE @ git+https://github.com/CrystalEye42/OpenChemIE"
+#   pip install pymupdf streamlit streamlit-ketcher
+#
+# Why: OpenChemIE pins torch>=1.10,<2.0, Pillow==9.5.0, opencv-python==4.5.5.64.
+# Install torch 1.13.1 FIRST (so pip can't pull a 2.x) and OpenChemIE BEFORE the
+# app deps (so its Pillow/opencv pins stand). The `manual` engine needs only the
+# CORE block, so the UI always runs even without the model stack.
+
+# ---- CORE (always needed) ----
+streamlit>=1.39,<2
+streamlit-ketcher>=0.0.1      # the editable chemical canvas
+pymupdf>=1.24                 # PDF -> page images (imported as `fitz`)
+rdkit>=2024.3.1               # validate / canonicalize / draw SMILES (conda-forge on Windows)
+# pillow / numpy: intentionally UNPINNED here. With the OpenChemIE engine they are
+# fixed by OpenChemIE (Pillow==9.5.0) — do not force pillow>=10 or it will conflict.
+pillow
+numpy<2                       # torch 1.13 + the OpenChemIE stack need numpy 1.x
+
+# ---- OPENCHEMIE ENGINE (molecules + reactions, PyTorch) ----
+# NOT on PyPI — installs from GitHub source. Needs torch<2.0 (install the CPU build
+# of 1.13.1 first on CPU-only machines) and the system poppler library + the
+# `pdftotext` package (install both via conda-forge on Windows).
+torch==1.13.1                 # pip install torch==1.13.1 --index-url https://download.pytorch.org/whl/cpu
+OpenChemIE @ git+https://github.com/CrystalEye42/OpenChemIE
+
+# ---- DECIMER ENGINE (molecules only, TensorFlow) — OPTIONAL ----
+# Heavy (brings TensorFlow). Lighter alternative if the OpenChemIE stack won't
+# resolve on your platform; molecules only, no reactions.
+# decimer>=2.7
+# decimer-segmentation>=1.4

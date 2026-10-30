@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Model weights / caches (downloaded at runtime — never commit these)
+*.ckpt
+*.pt
+*.pth
+.cache/
+models/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Scratch
+*.log
+tmp/
+
+# Benchmark artefacts (regenerate with bench/benchmark.py make|run|papers)
+bench/cases/
+bench/papers/
+bench/papers_out/
+bench/results.json

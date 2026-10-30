@@ -1,0 +1,12 @@
+# Theme tuned to match the CanvasPrime / Chemora look:
+# emerald-green accent, clean light background. Change these if their brand
+# colours differ — one place, affects the whole app.
+[theme]
+primaryColor = "#10b981"              # emerald green (CanvasPrime accent)
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f3f6f4"  # very light green-grey panels
+textColor = "#1a2b25"
+font = "sans serif"
+
+[server]
+maxUploadSize = 50                    # MB — research PDFs can be large
